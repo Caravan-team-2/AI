@@ -16,6 +16,9 @@ class Settings(BaseSettings):
 
 	database_url: Optional[str] = Field(default=None, alias="DATABASE_URL")
 
+	# Gemini API
+	gemini_api_key: Optional[str] = Field(default=None, alias="GEMINI_API_KEY")
+
 	# CORS
 	backend_cors_origins: list[str] = Field(default_factory=lambda: ["*"])
 
