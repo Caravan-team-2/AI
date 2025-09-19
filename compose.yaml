@@ -8,11 +8,56 @@
 # database or a cache. For examples, see the Awesome Compose repository:
 # https://github.com/docker/awesome-compose
 services:
-  server:
+  ai:
     build:
       context: .
+      dockerfile: ai/Dockerfile
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ai.rule=PathPrefix(`/ai`)
+      - traefik.http.routers.ai.entrypoints=web
+      - traefik.http.services.ai.loadbalancer.server.port=8000
+      - traefik.http.middlewares.strip-ai.stripPrefix.prefixes=/ai
+      - traefik.http.routers.ai.middlewares=strip-ai
+
+
+  fraud:
+    build:
+      context: .
+      dockerfile: fraud/Dockerfile
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.fraud.rule=PathPrefix(`/fraud`)
+      - traefik.http.routers.fraud.entrypoints=web
+      - traefik.http.services.fraud.loadbalancer.server.port=8001
+      - traefik.http.middlewares.strip-fraud.stripPrefix.prefixes=/fraud
+      - traefik.http.routers.fraud.middlewares=strip-fraud
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=10.103.44.199:19092
+      - KAFKA_REST_URL=http://10.103.44.199:8080
+
+  traefik:
+    image: traefik:v3.0
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
     ports:
-      - 8000:8000
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  qdrant:
+    image: qdrant/qdrant:v1.10.0
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__HTTP_PORT=6333
+    ports:
+      - 6333:6333
+      - 6334:6334
+    volumes:
+      - qdrant_data:/qdrant/storage
+
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
@@ -41,8 +86,8 @@ services:
 #       interval: 10s
 #       timeout: 5s
 #       retries: 5
-# volumes:
-#   db-data:
+volumes:
+  qdrant_data:
 # secrets:
 #   db-password:
 #     file: db/password.txt

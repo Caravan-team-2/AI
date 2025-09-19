@@ -22,6 +22,15 @@ class Settings(BaseSettings):
 	# CORS
 	backend_cors_origins: list[str] = Field(default_factory=lambda: ["*"])
 
+	# Vector DB
+	vector_db_url: Optional[str] = Field(default="http://qdrant:6333", alias="VECTOR_DB_URL")
+
+	# Kafka (external cluster defaults)
+	kafka_bootstrap_servers: str = Field(default="10.103.44.199:19092", alias="KAFKA_BOOTSTRAP_SERVERS")
+	kafka_rest_url: Optional[str] = Field(default="http://10.103.44.199:8080", alias="KAFKA_REST_URL")
+	# Kafka topic
+	kafka_topic: str = "plate_detect"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

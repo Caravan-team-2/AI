@@ -6,7 +6,7 @@ import io
 import json
 import re
 import httpx
-from app.core.config import get_settings
+from ai.core.config import get_settings
 
 router = APIRouter()
 
@@ -19,7 +19,7 @@ def _identify_damaged_parts_with_gemini(image: Image.Image, angle: str = "unknow
     genai.configure(api_key="AIzaSyAuJLWs0O9vVBPJZaiaZFFfSG238HfqeSU")
     model = genai.GenerativeModel("gemini-1.5-flash")
 
-    # Convert PIL image to bytes
+    # Convert PIL image to bytesllmmmm
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
     image_bytes = buffer.getvalue()

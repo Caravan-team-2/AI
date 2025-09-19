@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
+from fraud.core.config import get_settings
 
 
 settings = get_settings()

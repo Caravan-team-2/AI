@@ -6,12 +6,12 @@ import io
 import json
 import re
 import requests
-from app.core.config import get_settings
+from ai.core.config import get_settings
 
 router = APIRouter()
 
 
-def _extract_fields_with_gemini(image: Image.Image) -> Dict[str, Any]:
+def _extract_fields_with_gemini(image: Image.Image,perssonal_image= Image.Image) -> Dict[str, Any]:
     """Extract fields from license card image using Gemini Vision API"""
     settings = get_settings()
 
@@ -23,10 +23,17 @@ def _extract_fields_with_gemini(image: Image.Image) -> Dict[str, Any]:
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
     image_bytes = buffer.getvalue()
-
+    buffer = io.BytesIO()
+    perssonal_image.save(buffer, format="PNG")
+    perssonal_image_bytes = buffer.getvalue()
     image_blob = {
         "mime_type": "image/png",
         "data": image_bytes
+    }
+
+    perssonal_image_blob = {
+        "mime_type": "image/png",
+        "data": perssonal_image_bytes
     }
 
     prompt = """
@@ -42,19 +49,19 @@ def _extract_fields_with_gemini(image: Image.Image) -> Dict[str, Any]:
         "expires_at": "license expiry date in YYYY-MM-DD",
         "license_type": "type of license (enum if available)",
         "license_number": "driving license number(ussualy the first code in the license number)",
-        "is_verified": "boolean: true if this is a driving license, false if it is any other type of document"
+        "is_verified": "boolean: true if this is a driving license, false if it is any other type of document and the perssonal image is the same as the image of the license card"
     }
 
     Rules:
     1. All fields must be in Arabic.
     2. If a field is not found, use null, except "is_verified".
-    3. "is_verified" must always be true or false. Determine it based on whether the image is a driving license.
+    3. "is_verified" must always be true or false. Determine it based on whether the image is a driving license and the perssonal image is the same as the image of the license card.
     4. Return only valid JSON. Do not include explanations or extra text.
     5. If unsure, set "is_verified" to false.
     """
 
     try:
-        response = model.generate_content([prompt, image_blob])
+        response = model.generate_content([prompt, image_blob, perssonal_image_blob])
         response_text = response.text.strip()
         extracted_data = json.loads(response_text)
 
@@ -105,7 +112,7 @@ def _extract_fields_with_gemini(image: Image.Image) -> Dict[str, Any]:
 
 
 @router.get("/extract", summary="Extract data from Arabic license card image URL using Gemini")
-async def extract_id_data_by_url(image_url: str = Query(..., description="Cloudinary image URL")) -> Dict[str, Any]:
+async def extract_id_data_by_url(image_url: str = Query(..., description="Cloudinary image URL"),perssonal_image_url: str = Query(..., description="Cloudinary personal image URL")) -> Dict[str, Any]:
     try:
         # Fetch the image from the URL
         response = requests.get(image_url)
@@ -116,7 +123,7 @@ async def extract_id_data_by_url(image_url: str = Query(..., description="Cloudi
 
     # Extract fields using Gemini Vision API
     try:
-        fields = _extract_fields_with_gemini(image)
+        fields = _extract_fields_with_gemini(image,perssonal_image)
         return {"fields": fields, "extraction_method": "gemini_vision"}
     except HTTPException:
         raise
