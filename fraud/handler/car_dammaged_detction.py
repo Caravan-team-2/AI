@@ -1,6 +1,8 @@
+from fraud.kafka.producer import publish
 class CarDamageDetectionHandler:
     def __init__(self):
         pass
-    def handle(self, car_dammaged_detection: str) -> None:
-        print(f"Handling car damaged detection: {car_dammaged_detection}")
-       
+    @staticmethod
+    def handle(car_dammaged_detection: str) -> bool:
+        publish({"car_dammaged_detection": car_dammaged_detection}, topic="car_dammaged_detection")
+        return True
